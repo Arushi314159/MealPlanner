@@ -114,8 +114,19 @@ async function scrapeSpecials(): Promise<SpecialItem[]> {
       const url = `${SPECIALS_URL}?page=${pageNum}`;
       console.log(`Loading page ${pageNum}: ${url}`);
 
-      await page.goto(url, { waitUntil: "domcontentloaded" });
-      await page.waitForSelector("product-price h3", { timeout: 15000 }).catch(() => null);
+      const response = await page.goto(url, { waitUntil: "domcontentloaded" });
+      console.log(`  response status: ${response?.status()} final url: ${page.url()}`);
+
+      const foundPriceSelector = await page
+        .waitForSelector("product-price h3", { timeout: 15000 })
+        .then(() => true)
+        .catch(() => false);
+
+      if (!foundPriceSelector) {
+        const bodyText = await page.innerText("body").catch(() => "");
+        console.log(`  price selector not found. Page title: "${await page.title()}"`);
+        console.log(`  body text sample: ${bodyText.slice(0, 500).replace(/\s+/g, " ")}`);
+      }
 
       // Trigger lazy-loaded content
       for (let i = 0; i < 5; i++) {
